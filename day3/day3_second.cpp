@@ -6,6 +6,7 @@
 using namespace std;
 
 int find_next_biggest(int target)
+    // change this to a grammar? how to handle so many variables..
 {
     vector<int> prev {1, 2, 4, 5, 10, 11, 23, 25};      // fake second level
 
