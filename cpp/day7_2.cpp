@@ -4,7 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
+#include <map>
 
 using namespace std;
 
@@ -16,7 +16,7 @@ struct Tower {
         : name{n}, weight{w} { }
 
     Tower()
-        : name{""}, weight{0}, child_names{vector<string>()} { }
+        : name{""}, weight{0}, child_names{vector<string>{}} { }
 
     string name;
     int weight;
@@ -32,24 +32,18 @@ istream& operator>>(istream& is, Tower& tt)
     string nn;
     int ww;
     char ch1, ch2;
-    vector<string> v;
-
     iss >> nn >> ch1 >> ww >> ch2;
-    if (ch1 != '(' || ch2 != ')') {
-        is.clear(ios_base::failbit);
-        return is;
-    }
 
     string a;
+    vector<string> v;
     if (iss >> a && a == "->") {
         for (string s; iss >> s; ) {
             if (s.back() == ',') s.pop_back();
             v.push_back(s);
         }
-        tt = Tower{nn, ww, v};
-    } else {
-        tt = Tower{nn, ww};
-    }
+    } 
+
+    tt = Tower{nn, ww, v};
 
     return is;
 }
@@ -62,15 +56,17 @@ ostream& operator<<(ostream& os, Tower& tt)
 }
 
 void fill_from_file(istream& is, vector<Tower>& v)
+    // exercise 1
 {
     for (Tower t; is >> t; )
         v.push_back(t);
 }
 
-void fill_from_file(istream& is, unordered_map<string, Tower>& u)
+void fill_from_file(istream& is, map<string, Tower>& m)
+    // exercise 2
 {
     for (Tower t; is >> t; )
-        u[t.name] = t;
+        m[t.name] = t;
 }
 
 Tower* filter_out_children(const vector<Tower*>& pv) {
@@ -101,10 +97,10 @@ Tower* get_root(vector<Tower>& v)
     return filter_out_children(pvt);
 }
 
-Tower* get_root(unordered_map<string, Tower>& u)
+Tower* get_root(map<string, Tower>& m)
 {
     vector<Tower*> pvt;
-    for (auto& a : u)
+    for (auto& a : m)
         pvt.push_back(&a.second);
 
     return filter_out_children(pvt);
@@ -114,17 +110,31 @@ struct Node {
     Node(Tower* p, vector<Node> v)
         : tower{p}, children{v} { }
 
+    Node(const Node& n)
+        : tower{n.tower}, children{n.children} { }
+
+    Node& operator=(const Node&);
+
     Tower* tower;
     vector<Node> children;
 };
 
-Node get_node(Tower* p, unordered_map<string, Tower>& u)
+Node& Node::operator=(const Node& n)
+    // make this Node a copy of n
+    // is this necessary?
+{
+    tower = n.tower;
+    children = n.children;
+    return *this;
+}
+
+Node get_node(Tower* p, map<string, Tower>& m)
 {
     vector<Node> vn;
 
     for (const auto& a : p->child_names) {
-        Tower* t = &u[a];
-        Node n = get_node(t, u);
+        Tower* t = &m[a];
+        Node n = get_node(t, m);
         vn.push_back(n);
     }
 
@@ -163,24 +173,24 @@ int find_diff(vector<int>& vi)
     return -1;
 }
 
-void track_it_down(Node& n)
+void track_it_down(Node& n)         // Error happens here at end of while loop
 {
-    Node nn = n;
+    Node* nn = &n;
 
-    while(nn.children.size() > 0) {
-        vector<int> weights = get_weight_dist(nn);
+    while(nn->children.size() > 0) {
+        vector<int> weights = get_weight_dist(*nn);
 
+        cout << nn->tower->name << '\n';
         for (auto& a : weights)
             cout << a << '\t';
         cout << '\n';
+        for (auto& a : nn->children)
+            cout << a.tower->name << '\t' << a.tower->weight << '\n';
 
         int diff = find_diff(weights);
-        cout << diff << '\n';
 
         if (diff == -1) return;
-        cout << nn.tower->name << '\n';
-        nn = nn.children[diff];
-        cout << nn.tower->name << '\n';
+        nn = &nn->children[diff];         // crashes here
     }
 }
 
@@ -193,7 +203,7 @@ try {
     ifstream ifs {iname};
     if (!ifs) throw runtime_error("Could not read from file " + iname);
 
-    unordered_map<string, Tower> ut;
+    map<string, Tower> ut;
     fill_from_file(ifs, ut);
 
     Tower* pr = get_root(ut);

@@ -4,9 +4,11 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
+#include <map>
 
 using namespace std;
+
+// Satisfies both problems
 
 void fill_from_file(istream& is, vector<string>& v)
 {
@@ -14,7 +16,7 @@ void fill_from_file(istream& is, vector<string>& v)
         v.push_back(line);
 }
 
-void assign_registers(vector<string>& inst, unordered_map<string, int>& u)
+void assign_registers(vector<string>& inst, map<string, int>& u)
 {
     for (string s : inst) {
         istringstream iss {s};
@@ -27,8 +29,8 @@ void assign_registers(vector<string>& inst, unordered_map<string, int>& u)
 struct Instruction {
     Instruction(const string& s);
 
-    bool test(unordered_map<string, int>& u);
-    void execute(unordered_map<string, int>& u);
+    bool test(map<string, int>& u);
+    void execute(map<string, int>& u);
 
     string reg;
     char op;
@@ -51,7 +53,7 @@ Instruction::Instruction(const string& s)
     iss >> _ >> r >> c >> v;
 }
 
-bool Instruction::test(unordered_map<string, int>& u) 
+bool Instruction::test(map<string, int>& u) 
 {
     if (c == ">")  return u[r] > v;
     if (c == "<")  return u[r] < v;
@@ -63,14 +65,14 @@ bool Instruction::test(unordered_map<string, int>& u)
     throw runtime_error("unrecognized op");
 }
 
-void Instruction::execute(unordered_map<string, int>& u)
+void Instruction::execute(map<string, int>& u)
 {
     // test condition
     if (test(u))
         op == '+' ? u[reg] += val : u[reg] -= val;
 }
 
-int find_largest(unordered_map<string, int>& u)
+int find_largest(map<string, int>& u)
 {
     int largest = -100000;
     for (const auto& a : u)
@@ -91,7 +93,7 @@ try {
     vector<string> instructions;
     fill_from_file(ifs, instructions);
 
-    unordered_map<string, int> registers;
+    map<string, int> registers;
     assign_registers(instructions, registers);
 
     int largest_ever = 0;
