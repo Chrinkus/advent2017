@@ -73,12 +73,6 @@ try {
     std::vector<int> lengths;
     fill_from_file(ifs, lengths);
 
-    /*
-    for (const auto& a : lengths)
-        cout << a << '\t';
-    cout << '\n';
-    */
-
     std::vector<int> list(256);
     for (int i = 0; i < list.size(); ++i)
         list[i] = i;

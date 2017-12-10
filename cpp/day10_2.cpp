@@ -3,12 +3,6 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include <functional>
-#include <algorithm>
-#include <numeric>
-#include <iterator>
-
-using namespace std;
 
 void fill_from_file(std::istream& is, std::vector<int>& v)
     // get input data
@@ -61,9 +55,9 @@ void knot_hash(std::vector<int>& list, const int length, int& pos, int& skip)
 void hex_out(int val)
 {
     if (val < 16)
-        cout << '0' << hex << val;
+        std::cout << '0' << std::hex << val;
     else
-        cout << hex << val;
+        std::cout << std::hex << val;
 }
 
 int main()
@@ -78,7 +72,7 @@ try {
     std::vector<int> lengths;
     fill_from_file(ifs, lengths);
 
-    vector<int> suffix {17, 31, 73, 47, 23};
+    std::vector<int> suffix {17, 31, 73, 47, 23};
 
     for (const auto a : suffix)
         lengths.push_back(a);
@@ -95,14 +89,17 @@ try {
     }
 
     for (int i = 0; i < 16; ++i) {
-        vector<int> dense;
+        std::vector<int> dense;
         for (int j = 0; j < 16; ++j) {
             dense.push_back(list[i * 16 + j]);
         }
-        int acc = accumulate(begin(dense), end(dense), 0, bit_xor<int>());
+
+        int acc = 0;
+        for (const auto& d : dense)
+            acc ^= d;
         hex_out(acc);
     }
-    cout << '\n';
+    std::cout << '\n';
 }
 catch(std::exception& e) {
     std::cerr << "Exception: " << e.what() << '\n';
