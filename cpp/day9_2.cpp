@@ -3,13 +3,11 @@
 #include <string>
 #include <fstream>
 
-using namespace std;
-
-int get_garbage(istream& is)
+int get_garbage(std::istream& is)
 {
     int score = 0;          // score value of current group
     int total = 0;          // running score
-    int gbg = 0;        // garbage characters
+    int gbg = 0;            // garbage characters
 
     bool garbage = false;   // garbage toggle
 
@@ -55,21 +53,21 @@ int get_garbage(istream& is)
 
 int main()
 try {
-    cout << "Which input shall be run?\n";
-    string file;
-    cin >> file;
-    string iname = "../inputs/day9_" + file + ".txt";
-    ifstream ifs {iname};
-    if (!ifs) throw runtime_error("Could not read from file " + iname);
+    std::cout << "Which input shall be run?\n";
+    std::string file;
+    std::cin >> file;
+    std::string iname = "../inputs/day9_" + file + ".txt";
+    std::ifstream ifs {iname};
+    if (!ifs) throw std::runtime_error("Could not read from file " + iname);
 
     int garbage = get_garbage(ifs);
-    cout << "The total garbage removed is: " << garbage << '\n';
+    std::cout << "The total garbage removed is: " << garbage << '\n';
 }
-catch(exception& e) {
-    cerr << "Exception: " << e.what() << '\n';
+catch(std::exception& e) {
+    std::cerr << "Exception: " << e.what() << '\n';
     return 1;
 }
 catch(...) {
-    cerr << "Unknown exception\n";
+    std::cerr << "Unknown exception\n";
     return 2;
 }

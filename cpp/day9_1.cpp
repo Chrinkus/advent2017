@@ -1,9 +1,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <fstream>
-#include <sstream>
 
 using namespace std;
 
@@ -19,11 +17,10 @@ int get_points(istream& is)
     while(is >> ch) {
         switch (ch) {
             case '!':
-                is >> ch;               // burn a char
+                is >> ch;                       // burn a char
                 break;
             case '{':
-                if (!garbage)
-                    ++score;            // increase score level
+                if (!garbage) ++score;          // increase score level
                 break;
             case '}':
                 if (!garbage && score > 0) {
@@ -32,12 +29,10 @@ int get_points(istream& is)
                 }
                 break;
             case '<':
-                if (!garbage)
-                    garbage = true;
+                if (!garbage) garbage = true;
                 break;
             case '>':
-                if (garbage)
-                    garbage = false;
+                if (garbage) garbage = false;
                 break;
             default:
                 // ignore chars
@@ -49,6 +44,7 @@ int get_points(istream& is)
 
 int main()
 try {
+    // access to input/test files
     cout << "Which input shall be run?\n";
     string file;
     cin >> file;
@@ -56,6 +52,7 @@ try {
     ifstream ifs {iname};
     if (!ifs) throw runtime_error("Could not read from file " + iname);
 
+    // solution code
     int total = get_points(ifs);
     cout << "The total score is: " << total << '\n';
 }
