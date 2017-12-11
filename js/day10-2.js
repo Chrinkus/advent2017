@@ -33,12 +33,10 @@ fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
 
     let hexHash = "";
     for (let i = 0; i < 16; i++) {
-        const dense = [];
-        for (let j = 0; j < 16; j++) {
-            dense.push(list[i * 16 + j]);
-        }
-
-        hexHash += dense.reduce((pre, cur) => pre ^ cur).toString(16);
+        hexHash += list
+            .slice(i * 16, i * 16 + 16)
+            .reduce((pre, cur) => pre ^ cur)
+            .toString(16);
     }
 
     console.log(hexHash);
