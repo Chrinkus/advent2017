@@ -1,13 +1,11 @@
 const fs = require('fs');
 
-fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
-    if (err) throw err;
-
-    const list      = Array(256).fill(0).map((_, i) => i),
+const getSparseHash = input => {
+    const hash      = Array(256).fill(0).map((_, i) => i),
           suffix    = [17, 31, 73, 47, 23],
-          lengths   = data.trim().split('')
-                          .map(x => x.charCodeAt())
-                          .concat(suffix);
+          lengths   = input.trim().split('')
+                        .map(x => x.charCodeAt())
+                        .concat(suffix);
 
     let pos  = 0,
         skip = 0;
@@ -17,27 +15,38 @@ fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
             const subList = [];
 
             for (let i = pos; i < pos + len; i++) {
-                subList.push(list[i % list.length]);
+                subList.push(hash[i % hash.length]);
             }
 
             subList
                 .reverse()
                 .forEach((x, i) => {
-                    list[(pos + i) % list.length] = x;
+                    hash[(pos + i) % hash.length] = x;
                 });
 
-            pos = (pos + len + skip) % list.length;
+            pos = (pos + len + skip) % hash.length;
             skip++;
         });
     }
 
-    let hexHash = "";
+    return hash;
+};
+
+const getDenseHash = hash => {
+    let dense = "";
+
     for (let i = 0; i < 16; i++) {
-        hexHash += list
+        dense += hash
             .slice(i * 16, i * 16 + 16)
             .reduce((pre, cur) => pre ^ cur)
             .toString(16);
     }
 
-    console.log(hexHash);
+    return dense;
+};
+
+fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
+    if (err) throw err;
+
+    console.log(getDenseHash(getSparseHash(data)));
 });

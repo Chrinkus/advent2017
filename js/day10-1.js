@@ -1,9 +1,8 @@
 const fs = require('fs');
 
-fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
-
+const getHash = input => {
     const lengths = data.split(',').map(Number),
-          list = Array(256).fill(0).map((_, i) => i);
+          hash = Array(256).fill(0).map((_, i) => i);
 
     let pos = 0,
         skip = 0;
@@ -12,18 +11,26 @@ fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
         const subList = [];
 
         for (let i = pos; i < pos + len; i++) {
-            subList.push(list[i % list.length]);
+            subList.push(hash[i % hash.length]);
         }
 
         subList
             .reverse()
             .forEach((x, i) => {
-                list[(pos + i) % list.length] = x;
+                hash[(pos + i) % hash.length] = x;
             });
 
         pos += len + skip;
         skip++;
     });
 
-    console.log(list[0] * list[1]);
+    return hash;
+});
+
+fs.readFile('../inputs/day10_input.txt', 'utf8', (err, data) => {
+    if (err) throw err;
+
+    const hash = getHash(data);
+
+    console.log(hash[0] * hash[1]);
 });
