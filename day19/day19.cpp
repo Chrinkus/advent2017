@@ -6,6 +6,49 @@
 
 using namespace std;
 
+struct Packet {
+    explicit Packet(const vector<char>&);
+
+    char move(vector<vector<char>>&);
+    void turn(vector<vector<char>>&);
+    void inc_steps() { ++steps; }
+
+    int x;
+    int y;
+    char dir;
+    string letters;
+    int steps;
+};
+
+Packet::Packet(const vector<char>& v)
+    : y{0}, dir{'d'}, letters{""}, steps{0}
+{
+    for (int i = 0; i < v.size(); ++i)
+        if (!isspace(v[i]))
+            x = i;
+}
+
+char Packet::move(vector<vector<char>>& vv)
+{
+    switch(dir) {
+        case 'u': --y; break;
+        case 'd': ++y; break;
+        case 'l': --x; break;
+        case 'r': ++x; break;
+        default:
+            throw runtime_error("move(): unknown direction");
+    }
+    return vv[y][x];
+}
+
+void Packet::turn(vector <vector<char>>& vv)
+{
+    if (dir == 'u' || dir == 'd')
+        dir = isspace(vv[y][x-1]) ? 'r' : 'l';
+    else if (dir == 'l' || dir == 'r')
+        dir = isspace(vv[y-1][x]) ? 'd' : 'u';
+}
+
 vector<vector<char>> load_diagram(const string& s)
 {
     ifstream ifs {s};
@@ -22,55 +65,20 @@ vector<vector<char>> load_diagram(const string& s)
     return vvc;
 }
 
-int get_start(vector<char>& v)
+void traverse(Packet& p, vector<vector<char>>& vv)
 {
-    for (int i = 0; i < v.size(); ++i)
-        if (!isspace(v[i]))
-            return i;
-
-    throw runtime_error("row is all whitespace");
-}
-
-char move(int& x, int& y, const char d, vector<vector<char>>& vv)
-{
-    switch(d) {
-        case 'u': --y; break;
-        case 'd': ++y; break;
-        case 'l': --x; break;
-        case 'r': ++x; break;
-        default:
-            throw runtime_error("Unknown direction");
-    }
-    return vv[y][x];
-}
-
-char turn(int x, int y, char d, vector<vector<char>>&vv)
-{
-    if (d == 'u' || d == 'd')
-        return isspace(vv[y][x-1]) ? 'r' : 'l';
-    else if (d == 'l' || d == 'r')
-        return isspace(vv[y-1][x]) ? 'd' : 'u';
-
-    throw runtime_error("Unknown direction");
-}
-
-int traverse(vector<vector<char>>& vv, string& letters)
-{
-    int x = get_start(vv.front());
-    int y = 0;
-    char direction = 'd';
-    int steps = 0;
-    while (++steps) {
-        char next = move(x, y, direction, vv);
+    while (true) {
+        char next = p.move(vv);
+        p.inc_steps();
 
         if (isspace(next)) {            // end! return result
-            return steps;
+            return;
         }
         else if (isalpha(next)) {       // found letter! save it and keep on
-            letters += next;
+            p.letters += next;
         }
         else if (next == '+') {         // only change direction if '+'
-            direction = turn(x, y, direction, vv);
+            p.turn(vv);
         }
     }
     
@@ -84,8 +92,11 @@ try {
 
     vector<vector<char>> diagram = load_diagram(iname);
 
-    string part_1 = "";
-    int part_2 = traverse(diagram, part_1);
+    Packet pac {diagram[0]};
+    traverse(pac, diagram);
+
+    string part_1 = pac.letters;
+    int part_2 = pac.steps;
 
     cout << "The answer to part 1 is: " << part_1 << '\n';
     cout << "The answer to part 2 is: " << part_2 << '\n';
