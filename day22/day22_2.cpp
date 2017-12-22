@@ -139,18 +139,8 @@ void Carrier::move(vector<vector<char>>& vvc)
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-// Challenge functions
+// Challenge function
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-int count_infected(vector<vector<char>>& vvc)
-{
-    int count = 0;
-    for (auto& vc : vvc)
-        for (auto& c : vc)
-            if (c == '#')
-                ++count;
-    return count;
-}
-
 int mass_burst(Carrier& c, vector<vector<char>>& m, int n)
 {
     int count = 0;
