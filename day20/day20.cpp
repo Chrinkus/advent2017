@@ -56,9 +56,9 @@ istream& operator>>(istream& is, Particle& p)
     vector<int64_t> aa (3);
     for (auto& a : s) {
         istringstream iss {a};
-        char ch1, ch2, ch3, ch4, ch5;
+        char ch1, ch2;              // ch2 is for burning chars
         int64_t i0, i1, i2;
-        iss >> ch1 >> ch2 >> ch3 >> i0 >> ch4 >> i1 >> ch5 >> i2;
+        iss >> ch1 >> ch2 >> ch2 >> i0 >> ch2 >> i1 >> ch2 >> i2;
 
         switch(ch1) {
             case 'p': pp [0] = i0; pp [1] = i1; pp [2] = i2; break;
