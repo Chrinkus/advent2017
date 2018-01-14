@@ -4,7 +4,7 @@ This repository contains my solutions to the [Advent of Code 2017](http://advent
 
 Writing these solutions have significantly aided my efforts to learn C++ and have often forced me to "look ahead" in my study to more advanced language facilities.
 
-Final Stats:
+### Final Stats:
 
 ![Advent of Code 2017 completion stats](./FinalStats.png)
 
