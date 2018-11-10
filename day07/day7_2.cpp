@@ -199,7 +199,7 @@ try {
     cout << "Which input shall be run?\n";
     string file;
     cin >> file;
-    string iname = "../inputs/day7_" + file + ".txt";
+    string iname = "./day7_" + file + ".txt";
     ifstream ifs {iname};
     if (!ifs) throw runtime_error("Could not read from file " + iname);
 

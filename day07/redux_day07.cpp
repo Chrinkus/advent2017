@@ -3,35 +3,27 @@
 #include <regex>
 #include <vector>
 #include <unordered_map>
-#include <memory>
+#include <memory>               // std::make_unique
+#include <functional>           // std::reference_wrapper
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-struct Solution {
-    int target = 0;
-    int actual = 0;
-    int to_change = 0;
-};
-
-template<typename InputIterator, typename BinaryPredicate>
-InputIterator find_diff(InputIterator first, InputIterator last,
-                        BinaryPredicate cmp)
-    // Finds the value that is different in a set of similar values.
-    // If range is smaller than 3 then there cannot be 'one' different value
-    // so last is returned. If all of the values are the same, last is
-    // returned. If there are multiple 'different' values then the behaviour
-    // is undefined.
+template<typename InputIterator>
+InputIterator find_diff(InputIterator first, InputIterator last)
+    // find the different value in a range of otherwise equal values.
+    // requires a range of 3 or more values, if more than one value is 'diff'
+    // behaviour is undefined.
+    // Returns last if all values are equal.
 {
     if (std::distance(first, last) < 3)     // too small to have 'diff'
         return last;
-
-    if (cmp(*first, *(first + 1))) {
-        auto it = first + 2;                // safe by 'too small' check
-        while (it != last && cmp(*it, *first))
+    if (*first == *(first + 1)) {
+        auto it = first + 2;                // safe
+        while (it != last && *it == *first)
             ++it;
         return it;
     } else {
-        return cmp(*first, *(first + 2)) ? first + 1 : first;
+        return *first == *(first + 2) ? first + 1 : first;
     }
 }
 
@@ -55,6 +47,16 @@ std::ostream& operator<<(std::ostream& os, const Program& p)
         os << child << ' ';
     os << "] (" << p.above_weight << ')';
     return os;
+}
+
+bool operator==(const Program& a, const Program& b)
+{
+    return (a.weight + a.above_weight) == (b.weight + b.above_weight);
+}
+
+bool operator!=(const Program& a, const Program& b)
+{
+    return !(a == b);
 }
 
 std::unique_ptr<Program> program_factory(const std::string& line)
@@ -126,21 +128,18 @@ void Tower::print_base() const
 void Tower::report_imbalance() const
 {
     const auto p = find_imbalance(base);
-
-    std::vector<const Program*> children;
-    for (const auto& child : p->children)
-        children.push_back(tower.at(child).get());
-
     std::cout << '\n'
               << "Unbalanced disc: " << p->name << '\n';
+
+    std::vector<std::reference_wrapper<const Program>> children;
+    for (const auto& child : p->children)
+        children.push_back(*tower.at(child));
+
     for (const auto child : children)
-        std::cout << child->name << ' ' << child->weight
-                  << " (" << child->weight + child->above_weight << ")\n";
-    auto it = find_diff(std::begin(children), std::end(children),
-            [](const Program* p, const Program* q) {
-                return (p->weight + p->above_weight) == (q->weight + q->above_weight);
-            });
-    std::cout << "Problem: " << **it << '\n';
+        std::cout << child.get().name << ' ' << child.get().weight
+                  << " (" << child.get().weight + child.get().above_weight << ")\n";
+    auto it = find_diff(std::begin(children), std::end(children));
+    std::cout << "Problem: " << *it << '\n';
 }
 
 void Tower::establish_parentage()
@@ -188,7 +187,6 @@ void Tower::check_balance(Program* p)
 }
 
 Program* Tower::find_imbalance(Program* p) const
-    // this seems bad
 {
     for (const auto& child : p->children) {
         const auto q = tower.at(child).get();
