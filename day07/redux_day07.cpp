@@ -7,6 +7,36 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
+struct Solution {
+    int target = 0;
+    int actual = 0;
+    int to_change = 0;
+};
+
+template<typename InputIterator, typename BinaryPredicate>
+InputIterator find_diff(InputIterator first, InputIterator last,
+                        BinaryPredicate cmp)
+    // Finds the value that is different in a set of similar values.
+    // If range is smaller than 3 then there cannot be 'one' different value
+    // so last is returned. If all of the values are the same, last is
+    // returned. If there are multiple 'different' values then the behaviour
+    // is undefined.
+{
+    if (std::distance(first, last) < 3)     // too small to have 'diff'
+        return last;
+
+    if (cmp(*first, *(first + 1))) {
+        auto it = first + 2;                // safe by 'too small' check
+        while (it != last && cmp(*it, *first))
+            ++it;
+        return it;
+    } else {
+        return cmp(*first, *(first + 2)) ? first + 1 : first;
+    }
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
 struct Program {
     std::string name;
     int weight = 0;
@@ -23,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, const Program& p)
     os << p.name << ' ' << p.weight << " [ ";
     for (const auto& child : p.children)
         os << child << ' ';
-    os << "] (" << p.above_weight << ") Balance: " << p.is_balanced;
+    os << "] (" << p.above_weight << ')';
     return os;
 }
 
@@ -60,14 +90,14 @@ public:
     explicit Tower(std::istream& is);
 
     void print_base() const;
-    void report_imbalance();
+    void report_imbalance() const;
 
 private:
     void establish_parentage();
     void set_base();
     void establish_weights(Program* p);
     void check_balance(Program* p);
-    Program* find_imbalance(Program* p);
+    Program* find_imbalance(Program* p) const;
 
     std::unordered_map<std::string,std::unique_ptr<Program>> tower;
     Program* base = nullptr;
@@ -89,21 +119,28 @@ Tower::Tower(std::istream& is)
 
 void Tower::print_base() const
 {
-    std::cout << "Tower base: " << *base << '\n';
+    std::cout << '\n'
+              << "Tower base: " << *base << '\n';
 }
 
-void Tower::report_imbalance() 
+void Tower::report_imbalance() const
 {
     const auto p = find_imbalance(base);
 
-    std::vector<Program*> children;
+    std::vector<const Program*> children;
     for (const auto& child : p->children)
-        children.push_back(tower[child].get());
+        children.push_back(tower.at(child).get());
 
-    std::cout << "Unbalanced disc: " << p->name << '\n';
+    std::cout << '\n'
+              << "Unbalanced disc: " << p->name << '\n';
     for (const auto child : children)
         std::cout << child->name << ' ' << child->weight
                   << " (" << child->weight + child->above_weight << ")\n";
+    auto it = find_diff(std::begin(children), std::end(children),
+            [](const Program* p, const Program* q) {
+                return (p->weight + p->above_weight) == (q->weight + q->above_weight);
+            });
+    std::cout << "Problem: " << **it << '\n';
 }
 
 void Tower::establish_parentage()
@@ -150,11 +187,11 @@ void Tower::check_balance(Program* p)
         p->is_balanced = true;
 }
 
-Program* Tower::find_imbalance(Program* p) 
+Program* Tower::find_imbalance(Program* p) const
     // this seems bad
 {
     for (const auto& child : p->children) {
-        auto q = tower[child].get();
+        const auto q = tower.at(child).get();
         if (!q->is_balanced) {
             return find_imbalance(q);
         }
