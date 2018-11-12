@@ -4,7 +4,6 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>               // std::make_unique
-#include <functional>           // std::reference_wrapper
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
@@ -27,62 +26,89 @@ InputIterator find_diff(InputIterator first, InputIterator last)
     }
 }
 
+template<typename InputIterator, typename BinaryCompare>
+InputIterator find_diff(InputIterator first, InputIterator last,
+                        BinaryCompare cmp)
+{
+    if (std::distance(first, last) < 3)
+        return last;
+    if (cmp(*first, *(first + 1))) {
+        auto it = first + 2;
+        while (it != last && cmp(*it, *first))
+            ++it;
+        return it;
+    } else {
+        return cmp(*first, *(first + 2)) ? first + 1 : first;
+    }
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+struct Program_data {
+    explicit Program_data(const std::string& line);
+
+    std::string name;
+    int weight = 0;
+    std::vector<std::string> children;
+};
+
+Program_data::Program_data(const std::string& line)
+{
+    static const std::regex name_age_pat {R"(^(\w+)\s\((\d+)\))"};
+    static const std::regex child_pat {R"((\w+))"};
+
+    std::smatch matches;
+    std::regex_search(line, matches, name_age_pat);
+
+    auto it = ++matches.begin();        // skip full match
+    name = *it++;
+    weight = std::stoi(*it++);
+    std::string rest = matches.suffix();
+
+    // could avoid this work if end of string (no children)
+    auto rit = std::regex_iterator<std::string::iterator>{std::begin(rest),
+                                                          std::end(rest),
+                                                          child_pat};
+    auto sentinel = std::regex_iterator<std::string::iterator>{};
+    while (rit != sentinel) {
+        children.push_back(rit->str());
+        ++rit;
+    }
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
 struct Program {
+    explicit Program(const std::string& n) : name{n} { }
+
+    int total_weight() const { return weight + above_weight; }
+
     std::string name;
     int weight = 0;
-    Program* parent;
-    std::vector<std::string> children;
-
-    // Part 2
     int above_weight = 0;
     bool is_balanced = false;
+    Program* parent = nullptr;
+    std::vector<Program*> children;
 };
 
 std::ostream& operator<<(std::ostream& os, const Program& p)
 {
-    os << p.name << ' ' << p.weight << " [ ";
-    for (const auto& child : p.children)
-        os << child << ' ';
-    os << "] (" << p.above_weight << ')';
+    os << p.name << '\t' << p.weight << '\t' << p.above_weight << '\t'
+       << p.total_weight() << "\t[ ";
+    for (const auto child : p.children)
+        os << child->name << ' ';
+    os << ']';
     return os;
 }
 
 bool operator==(const Program& a, const Program& b)
 {
-    return (a.weight + a.above_weight) == (b.weight + b.above_weight);
+    return a.total_weight() == b.total_weight();
 }
 
 bool operator!=(const Program& a, const Program& b)
 {
     return !(a == b);
-}
-
-std::unique_ptr<Program> program_factory(const std::string& line)
-{
-    auto p = std::make_unique<Program>();
-
-    static const std::regex name_age_pat{R"(^(\w+)\s\((\d+)\))"};
-    std::smatch matches;
-    std::regex_search(line, matches, name_age_pat);
-
-    auto it = ++matches.begin();
-    p->name = *it++;
-    p->weight = std::stoi(*it++);
-
-    static const std::regex child_pat {R"((\w+))"};
-    std::string rest = matches.suffix();
-    auto rit = std::regex_iterator<std::string::iterator> {std::begin(rest),
-                                                           std::end(rest),
-                                                           child_pat};
-    auto sentinel = std::regex_iterator<std::string::iterator>{};
-    while (rit != sentinel) {
-        p->children.push_back(rit->str());
-        ++rit;
-    }
-
-    return p;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -93,9 +119,9 @@ public:
 
     void print_base() const;
     void report_imbalance() const;
-
 private:
-    void establish_parentage();
+    void add_program(const std::string& line);
+    Program* retrieve_program(const std::string& key);
     void set_base();
     void establish_weights(Program* p);
     void check_balance(Program* p);
@@ -109,11 +135,9 @@ Tower::Tower(std::istream& is)
 {
     std::string line;
     while (getline(is, line)) {
-        auto p = program_factory(line);
-        tower[p->name] = std::move(p);
+        add_program(line);
     }
 
-    establish_parentage();
     set_base();
     establish_weights(base);
     check_balance(base);
@@ -122,31 +146,47 @@ Tower::Tower(std::istream& is)
 void Tower::print_base() const
 {
     std::cout << '\n'
-              << "Tower base: " << *base << '\n';
+              << "Part 1: Tower base is " << base->name << '\n';
 }
 
 void Tower::report_imbalance() const
 {
-    const auto p = find_imbalance(base);
+    const auto p_unbal = find_imbalance(base);
+
+    auto p_prob = *find_diff(std::begin(p_unbal->children),
+                              std::end(p_unbal->children),
+                              [](Program* a, Program* b)
+                              { return *a == *b; });
+    auto p_targ = p_prob == p_unbal->children.front()
+                                            ? ++p_unbal->children.front()
+                                            : p_unbal->children.front();
     std::cout << '\n'
-              << "Unbalanced disc: " << p->name << '\n';
-
-    std::vector<std::reference_wrapper<const Program>> children;
-    for (const auto& child : p->children)
-        children.push_back(*tower.at(child));
-
-    for (const auto child : children)
-        std::cout << child.get().name << ' ' << child.get().weight
-                  << " (" << child.get().weight + child.get().above_weight << ")\n";
-    auto it = find_diff(std::begin(children), std::end(children));
-    std::cout << "Problem: " << *it << '\n';
+              << "Part 2: " << p_prob->name << " needs to be "
+              << p_prob->weight + p_targ->total_weight() -
+                                  p_prob->total_weight() << '\n';
 }
 
-void Tower::establish_parentage()
+void Tower::add_program(const std::string& line)
 {
-    for (const auto& program : tower)
-        for (const auto& child : program.second->children)
-            tower[child]->parent = program.second.get();
+    auto data = Program_data{line};
+
+    auto p = retrieve_program(data.name);
+    p->weight = data.weight;
+    for (const auto& child : data.children) {
+        auto q = retrieve_program(child);
+        q->parent = p;
+        p->children.push_back(q);
+    }
+}
+
+Program* Tower::retrieve_program(const std::string& key)
+{
+    auto& program = tower[key];
+    if (program)
+        return program.get();
+
+    program = std::make_unique<Program>(key);
+    return program.get();
 }
 
 void Tower::set_base()
@@ -158,46 +198,41 @@ void Tower::set_base()
         }
 }
 
-void Tower::establish_weights(Program* p)
+void Tower::establish_weights(Program* program)
 {
-    for (const auto& child : p->children) {
-        auto q = tower[child].get();
-        establish_weights(q);
-        p->above_weight += q->weight + q->above_weight;
+    for (const auto child : program->children) {
+        establish_weights(child);
+        program->above_weight += child->total_weight();
     }
 }
 
-void Tower::check_balance(Program* p)
+void Tower::check_balance(Program* program)
+    // requires that above weights have already been calculated
 {
     std::vector<int> above_weights;
 
-    for (const auto& child : p->children) {
-        auto q = tower[child].get();
-
-        if (q->above_weight == 0)
-            q->is_balanced = true;
+    for (const auto child : program->children) {
+        if (child->above_weight == 0)
+            child->is_balanced = true;
         else
-            check_balance(q);
+            check_balance(child);
 
-        above_weights.push_back(q->weight + q->above_weight);
+        above_weights.push_back(child->total_weight());
     }
 
-    if (p->above_weight == above_weights.front() * above_weights.size())
-        p->is_balanced = true;
+    if (program->above_weight == above_weights.front() * above_weights.size())
+        program->is_balanced = true;
 }
 
-Program* Tower::find_imbalance(Program* p) const
+Program* Tower::find_imbalance(Program* program) const
 {
-    for (const auto& child : p->children) {
-        const auto q = tower.at(child).get();
-        if (!q->is_balanced) {
-            return find_imbalance(q);
+    for (const auto child : program->children) {
+        if (!child->is_balanced) {
+            return find_imbalance(child);
         }
     }
-    return p;
+    return program;
 }
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
 int main()
 {
@@ -206,8 +241,4 @@ int main()
     Tower t {std::cin};
     t.print_base();
     t.report_imbalance();
-
-    std::cout << '\n'
-              << "Size of Tower: " << sizeof(Tower) << '\n'
-              << "Size of Program: " << sizeof(Program) << '\n';
 }
